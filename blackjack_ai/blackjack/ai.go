@@ -45,13 +45,13 @@ func (AI humanAI) Play(hand []deck.Card, dealer deck.Card) Move {
 	var input string
 	fmt.Println("Player: ", hand)
 	fmt.Println("Dealer: ", dealer)
-	fmt.Println("(H)it, (S)tand or (D)ouble?")
+	fmt.Println("(H)it, (S)tand, (D)ouble or s(P)lit?")
 
 	_, err := fmt.Scanf("%s\n", &input)
 
 	for err != nil {
 		fmt.Println("Invalid input. Use 'h' to hit or 's' for stand.")
-		fmt.Print("\n(H)it or (S)tand?\n")
+		fmt.Println("(H)it, (S)tand, (D)ouble or s(P)lit?")
 		_, err = fmt.Scanf("%s\n", &input)
 	}
 
@@ -62,16 +62,22 @@ func (AI humanAI) Play(hand []deck.Card, dealer deck.Card) Move {
 		return MoveStand
 	case "d":
 		return MoveDouble
+	case "p":
+		return MoveSplit
 	default:
 		panic("Invalid option")
 	}
 }
 
-func (AI humanAI) Results(hand [][]deck.Card, dealersHand []deck.Card) {
+func (AI humanAI) Results(hands [][]deck.Card, dealersHand []deck.Card) {
 
 	fmt.Println("** FINAL RESULTS **")
-	fmt.Println("Player: ", hand)
+	fmt.Println("Player: ")
+	for _, h := range hands {
+		fmt.Println(h)
+	}
 	fmt.Println("Dealer: ", dealersHand)
+
 }
 
 func (AI humanAI) Bet(shuffled bool) int {

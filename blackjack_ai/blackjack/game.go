@@ -3,7 +3,6 @@ package blackjack
 import (
 	"deck"
 	"errors"
-	"fmt"
 )
 
 const (
@@ -46,6 +45,7 @@ type hand struct {
 
 func deal(g *Game) {
 	playerHand := make([]deck.Card, 0, 5)
+	g.handIdx = 0
 	g.dealer = make([]deck.Card, 0, 5)
 
 	var card deck.Card
@@ -97,7 +97,7 @@ func (g *Game) Play(ai AI) int {
 	g.deck = nil
 	min := 52 * g.nDecks / 3
 
-	for i := 0; i < g.nDecks; i++ {
+	for i := 0; i < g.nHands; i++ {
 		deckIsShuffled := false
 		if len(g.deck) < min {
 			g.deck = deck.New(deck.Deck(g.nDecks), deck.Shuffle)
@@ -153,12 +153,31 @@ func MoveHit(g *Game) error {
 }
 
 func MoveDouble(g *Game) error {
-	if len(g.player) != 2 {
+	if len(*g.currentHand()) != 2 {
 		return errors.New("you can only double on a hand with 2 cards")
 	}
 	g.playerBet *= 2
 	MoveHit(g)
 	return MoveStand(g)
+}
+
+func MoveSplit(g *Game) error {
+	cards := g.currentHand()
+	if len((*cards)) != 2 {
+		return errors.New("you can only split two cards of same rank")
+	}
+
+	if (*cards)[0].Rank != (*cards)[1].Rank {
+		return errors.New("both cards must have the same rank to split")
+	}
+
+	g.player = append(g.player, hand{
+		cards: []deck.Card{(*cards)[1]},
+		bet:   g.player[g.handIdx].bet,
+	})
+	g.player[g.handIdx].cards = (*cards)[:1]
+
+	return nil
 }
 
 func MoveStand(g *Game) error {
@@ -236,27 +255,23 @@ func endRound(g *Game, ai AI) {
 		case pBlackjack && dBlackjack:
 			winnings = 0
 		case dBlackjack:
-			winnings *= -1
+			winnings = -winnings
 		case pBlackjack:
 			winnings = int(float64(winnings) * g.blackJackPayout)
 		case pScore > 21:
-			g.balance--
-			winnings *= -1
+			winnings = -winnings
 		case dScore > 21:
+			// win
 		case pScore > dScore:
-			//win
-		case pScore < dScore:
-			//win
-			g.balance--
-			winnings *= -1
-		case pScore == dScore:
-			fmt.Println("Draw")
+			// win
+		case dScore > pScore:
+			winnings = -winnings
+		case dScore == pScore:
 			winnings = 0
 		}
 		g.balance += winnings
 	}
 
-	fmt.Println("\nbalance", g.balance)
 	ai.Results(allHands, g.dealer)
 	g.player = nil
 	g.dealer = nil
